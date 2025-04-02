@@ -1,0 +1,58 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边缘盒子管理系统</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>边缘盒子管理系统</h1>
+            <div class="connection-status">
+                <span class="indicator" id="connection-indicator"></span>
+                <span id="connection-text">连接中...</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>系统状态</h2>
+            <div class="dashboard">
+                <div class="metric">
+                    <h3>CPU使用率</h3>
+                    <div class="value" id="cpu-value">--</div>
+                </div>
+                <div class="metric">
+                    <h3>内存使用率</h3>
+                    <div class="value" id="memory-value">--</div>
+                </div>
+                <div class="metric">
+                    <h3>存储使用率</h3>
+                    <div class="value" id="storage-value">--</div>
+                </div>
+                <div class="metric">
+                    <h3>网络状态</h3>
+                    <div class="value" id="network-value">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>已连接设备</h2>
+            <div id="devices-container"></div>
+        </div>
+        
+        <div class="timestamp" id="timestamp">最后更新时间: --</div>
+        
+        <!-- 添加通知元素 -->
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <!-- 模块化JavaScript引入 -->
+    <script src="js/utils.js"></script>
+    <script src="js/websocket-service.js"></script>
+    <script src="js/device-service.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

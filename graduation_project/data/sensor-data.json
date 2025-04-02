@@ -1,0 +1,35 @@
+{
+  "timestamp": 1742838347332,
+  "devices": [
+    {
+      "id": "device-001",
+      "name": "温度传感器 1",
+      "type": "temperature",
+      "value": "24.0",
+      "unit": "°C",
+      "status": "online"
+    },
+    {
+      "id": "device-002",
+      "name": "湿度传感器 1",
+      "type": "humidity",
+      "value": "79.4",
+      "unit": "%",
+      "status": "online"
+    },
+    {
+      "id": "device-003",
+      "name": "光照传感器 1",
+      "type": "light",
+      "value": 796,
+      "unit": "lux",
+      "status": "online"
+    }
+  ],
+  "system": {
+    "cpu": 43,
+    "memory": 42,
+    "storage": 31,
+    "network": "connected"
+  }
+}
