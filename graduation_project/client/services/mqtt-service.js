@@ -2,6 +2,7 @@ const mqtt = require('mqtt');
 const config = require('../config');
 const logger = require('../utils/logger');
 const dataService = require('./data-service');
+const dbService = require('./db-service'); // 引入数据库服务
 
 /**
  * MQTT服务模块
@@ -17,8 +18,14 @@ class MqttService {
    * 初始化MQTT服务
    * @param {Object} initialData 初始数据
    */
-  init(initialData) {
+  async init(initialData) {
     this.data = initialData;
+    
+    // 初始化数据库
+    await dbService.init();
+    
+    // 保存初始数据到数据库
+    await dbService.saveData(initialData);
     
     // 连接MQTT代理
     this.client = mqtt.connect(config.MQTT_BROKER_URL);
@@ -65,6 +72,9 @@ class MqttService {
         
         // 保存数据到文件
         await dataService.saveData(this.data);
+        
+        // 保存数据到数据库
+        await dbService.saveData(this.data);
         
         // 发布数据到MQTT主题
         this.client.publish(config.MQTT_TOPIC, JSON.stringify(this.data));
@@ -123,6 +133,11 @@ class MqttService {
     
     logger.info(`设备 ${command.deviceId} 状态已更新为 ${command.targetStatus}`);
     
+    // 立即保存到数据库
+    dbService.saveData(this.data).catch(err => {
+      logger.error('保存设备状态变更到数据库失败', err);
+    });
+    
     // 发送命令响应
     this.sendCommandResponse({
       success: true,
@@ -157,6 +172,9 @@ class MqttService {
       this.client.end(true);
       logger.info('MQTT客户端已断开连接');
     }
+    
+    // 关闭数据库连接
+    dbService.close();
   }
 }
 

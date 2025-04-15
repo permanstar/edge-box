@@ -1,6 +1,7 @@
 const config = require('./client/config');
 const mqttService = require('./client/services/mqtt-service');
 const dataService = require('./client/services/data-service');
+const dbService = require('./client/services/db-service'); // 引入数据库服务
 const logger = require('./client/utils/logger');
 
 // 初始化服务
@@ -9,11 +10,14 @@ const init = async () => {
     // 确保数据目录存在
     await dataService.ensureDataDirectory();
     
+    // 初始化数据库
+    await dbService.init();
+    
     // 读取或创建初始数据
     const initialData = await dataService.getInitialData();
     
     // 连接MQTT并开始数据发布
-    mqttService.init(initialData);
+    await mqttService.init(initialData);
     
     logger.info('MQTT客户端启动成功');
   } catch (error) {
@@ -29,5 +33,6 @@ init();
 process.on('SIGINT', () => {
   logger.info('正在关闭MQTT客户端...');
   mqttService.disconnect();
+  dbService.close();
   process.exit(0);
 });

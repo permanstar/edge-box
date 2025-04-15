@@ -16,10 +16,11 @@ services:
     environment:
       - MQTT_BROKER_URL=mqtt://mqtt-broker:1883
     volumes:
-      - ./data:/app/data
+      - ./data:/app/data  # 确保数据持久化
     depends_on:
       - mqtt-broker
     command: ["node", "mqtt-client.js"]
+    restart: unless-stopped
 
   # Node.js Backend Server
   web-server:
@@ -35,3 +36,4 @@ services:
       - mqtt-broker
       - mqtt-client
     command: ["node", "server.js"]
+    restart: unless-stopped
