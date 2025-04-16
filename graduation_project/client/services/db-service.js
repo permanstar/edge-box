@@ -101,25 +101,38 @@ class DbService {
       const transaction = this.db.transaction((data) => {
         const { timestamp, devices, system } = data;
         
-        // 更新设备信息
+        // 更新设备信息（分开处理，避免不必要的REPLACE）
+        const getDevice = this.db.prepare(`SELECT id FROM devices WHERE id = ?`);
         const insertDevice = this.db.prepare(`
-          INSERT OR REPLACE INTO devices (id, name, type, unit)
+          INSERT OR IGNORE INTO devices (id, name, type, unit)
           VALUES (?, ?, ?, ?)
+        `);
+        const updateDevice = this.db.prepare(`
+          UPDATE devices SET name = ?, type = ?, unit = ?
+          WHERE id = ?
         `);
         
         // 插入设备数据
         const insertDeviceData = this.db.prepare(`
-          INSERT INTO device_data (device_id, value, status, timestamp)
+          INSERT INTO device_data (timestamp ,device_id, value, status)
           VALUES (?, ?, ?, ?)
         `);
         
         // 处理每个设备
         for (const device of devices) {
-          // 更新或插入设备信息
-          insertDevice.run(device.id, device.name, device.type, device.unit);
+          // 先检查设备是否存在
+          const existingDevice = getDevice.get(device.id);
+          
+          if (!existingDevice) {
+            // 设备不存在，插入新设备
+            insertDevice.run(device.id, device.name, device.type, device.unit);
+          } else {
+            // 设备存在，更新信息（如果需要）
+            updateDevice.run(device.name, device.type, device.unit, device.id);
+          }
           
           // 插入设备数据点
-          insertDeviceData.run(device.id, device.value, device.status, timestamp);
+          insertDeviceData.run(timestamp, device.id, device.value, device.status);
         }
         
         // 插入系统指标
