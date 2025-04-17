@@ -11,6 +11,7 @@ class MqttService {
   constructor() {
     this.client = null;
     this.responseListeners = []; // 添加响应监听器数组
+    this.batchResponseListeners = []; // 添加批量响应监听器数组
   }
   
   /**
@@ -92,31 +93,63 @@ class MqttService {
    * @param {Object} command 命令对象
    */
   sendCommand(command) {
-    // 使用实例变量client而不是参数
-    if (!this.client) {
-      throw new Error('MQTT客户端未初始化');
+    if (this.client && this.client.connected) {
+      this.client.publish(config.MQTT_COMMANDS_TOPIC, JSON.stringify(command));
+      logger.debug(`命令已发送: ${JSON.stringify(command)}`);
+    } else {
+      logger.error('MQTT客户端未连接，无法发送命令');
+      throw new Error('MQTT客户端未连接');
     }
-    
-    this.client.publish(config.MQTT_COMMANDS_TOPIC, JSON.stringify(command));
-    logger.info(`已发送命令到主题 ${config.MQTT_COMMANDS_TOPIC}: ${JSON.stringify(command)}`);
+  }
+  
+  /**
+   * 发送批量命令
+   * @param {Object} command 批量命令对象
+   */
+  sendBatchCommand(command) {
+    if (this.client && this.client.connected) {
+      this.client.publish(config.MQTT_COMMANDS_TOPIC, JSON.stringify(command));
+      logger.debug(`批量命令已发送: ${JSON.stringify(command)}`);
+    } else {
+      logger.error('MQTT客户端未连接，无法发送批量命令');
+      throw new Error('MQTT客户端未连接');
+    }
   }
   
   /**
    * 添加响应监听器
    * @param {Function} listener 监听器函数
+   * @param {boolean} isBatch 是否为批量响应
    */
-  subscribeToResponse(listener) {
+  subscribeToResponse(listener, isBatch = false) {
     if (typeof listener === 'function') {
-      this.responseListeners.push(listener);
+      if (isBatch) {
+        this.batchResponseListeners.push(listener);
+      } else {
+        this.responseListeners.push(listener);
+      }
     }
   }
   
   /**
    * 移除响应监听器
    * @param {Function} listener 监听器函数
+   * @param {boolean} isBatch 是否为批量响应
    */
-  unsubscribeFromResponse(listener) {
-    this.responseListeners = this.responseListeners.filter(l => l !== listener);
+  unsubscribeFromResponse(listener, isBatch = false) {
+    if (isBatch) {
+      this.batchResponseListeners = this.batchResponseListeners.filter(l => l !== listener);
+    } else {
+      this.responseListeners = this.responseListeners.filter(l => l !== listener);
+    }
+  }
+  
+  /**
+   * 专用取消批量响应订阅
+   * @param {Function} listener 监听器函数
+   */
+  unsubscribeFromBatchResponse(listener) {
+    this.unsubscribeFromResponse(listener, true);
   }
   
   /**
@@ -125,11 +158,21 @@ class MqttService {
    * @param {Buffer} message 消息
    */
   notifyResponseListeners(topic, message) {
+    // 通知常规响应监听器
     this.responseListeners.forEach(listener => {
       try {
         listener(topic, message);
       } catch (error) {
         logger.error('执行响应监听器时出错', error);
+      }
+    });
+    
+    // 通知批量响应监听器
+    this.batchResponseListeners.forEach(listener => {
+      try {
+        listener(topic, message);
+      } catch (error) {
+        logger.error('执行批量响应监听器时出错', error);
       }
     });
   }

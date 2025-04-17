@@ -35,15 +35,24 @@ class DbService {
       // 启用外键约束
       this.db.pragma('foreign_keys = ON');
       
-      // 创建设备表
+      // 创建设备表 - 添加 last_seen 列
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS devices (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           type TEXT NOT NULL,
-          unit TEXT
+          unit TEXT,
+          last_seen INTEGER
         )
       `);
+      
+      // 尝试为现有表添加 last_seen 列（如果表已存在但没有该列）
+      try {
+        this.db.exec(`ALTER TABLE devices ADD COLUMN last_seen INTEGER`);
+        logger.info('为设备表添加了 last_seen 列');
+      } catch (error) {
+        // 列可能已经存在，忽略错误
+      }
       
       // 创建数据记录表
       this.db.exec(`
@@ -74,6 +83,7 @@ class DbService {
         CREATE INDEX IF NOT EXISTS idx_device_data_timestamp ON device_data(timestamp);
         CREATE INDEX IF NOT EXISTS idx_device_data_device_id ON device_data(device_id);
         CREATE INDEX IF NOT EXISTS idx_system_metrics_timestamp ON system_metrics(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_devices_last_seen ON devices(last_seen);
       `);
       
       this.initialized = true;
@@ -104,17 +114,17 @@ class DbService {
         // 更新设备信息（分开处理，避免不必要的REPLACE）
         const getDevice = this.db.prepare(`SELECT id FROM devices WHERE id = ?`);
         const insertDevice = this.db.prepare(`
-          INSERT OR IGNORE INTO devices (id, name, type, unit)
-          VALUES (?, ?, ?, ?)
+          INSERT OR IGNORE INTO devices (id, name, type, unit, last_seen)
+          VALUES (?, ?, ?, ?, ?)
         `);
         const updateDevice = this.db.prepare(`
-          UPDATE devices SET name = ?, type = ?, unit = ?
+          UPDATE devices SET name = ?, type = ?, unit = ?, last_seen = ?
           WHERE id = ?
         `);
         
         // 插入设备数据
         const insertDeviceData = this.db.prepare(`
-          INSERT INTO device_data (timestamp ,device_id, value, status)
+          INSERT INTO device_data (timestamp, device_id, value, status)
           VALUES (?, ?, ?, ?)
         `);
         
@@ -123,16 +133,28 @@ class DbService {
           // 先检查设备是否存在
           const existingDevice = getDevice.get(device.id);
           
+          // 只有在线设备才更新最后在线时间
+          const lastSeenTime = device.status === 'online' ? timestamp : null;
+          
           if (!existingDevice) {
             // 设备不存在，插入新设备
-            insertDevice.run(device.id, device.name, device.type, device.unit);
+            insertDevice.run(device.id, device.name, device.type, device.unit, lastSeenTime);
           } else {
-            // 设备存在，更新信息（如果需要）
-            updateDevice.run(device.name, device.type, device.unit, device.id);
+            // 设备存在，更新信息
+            // 只有设备在线时才更新 last_seen
+            updateDevice.run(
+              device.name, 
+              device.type, 
+              device.unit, 
+              device.status === 'online' ? timestamp : null,
+              device.id
+            );
           }
           
-          // 插入设备数据点
-          insertDeviceData.run(timestamp, device.id, device.value, device.status);
+          // 只为在线设备插入数据点
+          if (device.status === 'online') {
+            insertDeviceData.run(timestamp, device.id, device.value, device.status);
+          }
         }
         
         // 插入系统指标
@@ -215,7 +237,32 @@ class DbService {
   }
   
   /**
-   * 清理旧数据 (保留最近7天数据)
+   * 获取所有注册的设备信息
+   * @returns {Array} 设备列表
+   */
+  getAllRegisteredDevices() {
+    if (!this.initialized || !this.db) {
+      throw new Error('数据库未初始化');
+    }
+    
+    try {
+      const query = this.db.prepare(`
+        SELECT id, name, type, unit, last_seen
+        FROM devices
+        ORDER BY id ASC
+      `);
+      
+      const devices = query.all();
+      logger.debug(`从数据库获取了 ${devices.length} 个注册设备`);
+      return devices;
+    } catch (error) {
+      logger.error('获取注册设备列表失败', error);
+      return [];
+    }
+  }
+  
+  /**
+   * 清理旧数据 (保留最近7天数据并删除长期不活跃设备)
    */
   cleanupOldData() {
     if (!this.initialized || !this.db) return;
@@ -239,8 +286,10 @@ class DbService {
       `);
       
       const systemMetricsResult = deleteOldSystemMetrics.run(sevenDaysAgo);
-      
-      logger.info(`清理旧数据完成: 已删除 ${deviceDataResult.changes} 条设备数据记录和 ${systemMetricsResult.changes} 条系统指标记录`);
+            
+      logger.info(`清理旧数据完成: 
+        - 已删除 ${deviceDataResult.changes} 条设备数据记录
+        - 已删除 ${systemMetricsResult.changes} 条系统指标记录`);
     } catch (error) {
       logger.error('清理旧数据失败', error);
     }

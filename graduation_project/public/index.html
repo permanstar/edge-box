@@ -39,6 +39,20 @@
 
         <div class="card">
             <h2>已连接设备</h2>
+            
+            <!-- 添加批量操作区域 -->
+            <div class="bulk-actions" id="bulk-actions" style="display: none;">
+                <div class="selection-actions" id="selection-actions" style="display: none;">
+                    <button id="select-all" class="btn btn-outline">全选/取消全选</button>
+                    <button id="batch-toggle" class="btn btn-success" disabled>批量切换</button>
+                    <button id="cancel-selection" class="btn btn-outline">取消选择</button>
+                    <span id="selection-count">未选择设备</span>
+                </div>
+            </div>
+            
+            <!-- 添加批量操作按钮 -->
+            <button id="toggle-selection-mode" class="btn" style="margin-bottom: 15px;">批量操作</button>
+            
             <div id="devices-container"></div>
         </div>
         
