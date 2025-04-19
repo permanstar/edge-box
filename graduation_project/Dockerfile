@@ -2,8 +2,8 @@ FROM node:16-alpine
 
 WORKDIR /app
 
-# 安装 SQLite 依赖
-RUN apk add --no-cache sqlite sqlite-dev
+# 安装 SQLite 和 MySQL 客户端依赖
+RUN apk add --no-cache sqlite sqlite-dev mysql-client
 RUN apk add --no-cache --virtual .build-deps python3 make g++
 
 # Install dependencies
@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 1883
 EXPOSE 3000
 
-CMD ["node", "mqtt-client.js"]
+CMD ["node", "server.js"]

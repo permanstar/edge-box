@@ -12,8 +12,37 @@ module.exports = {
    * @param {express.Request} req 请求对象
    * @param {express.Response} res 响应对象
    */
-  getData: (req, res) => {
-    res.json(dataStore.getData());
+  getData: async (req, res) => {
+    try {
+      const data = dataStore.getData();
+      
+      // 如果是管理员，返回所有数据
+      if (req.user.role === 'admin') {
+        return res.json(data);
+      }
+      
+      // 如果是普通用户，只返回有权限的设备数据
+      const { pool } = require('../database/db');
+      const [permissions] = await pool.query(
+        'SELECT device_id FROM device_permissions WHERE user_id = ?',
+        [req.user.userId]
+      );
+      
+      const allowedDeviceIds = permissions.map(p => p.device_id);
+      
+      // 过滤设备数据
+      const filteredData = {
+        ...data,
+        devices: data.devices ? data.devices.filter(device => 
+          allowedDeviceIds.includes(device.id)
+        ) : []
+      };
+      
+      res.json(filteredData);
+    } catch (error) {
+      logger.error('获取设备数据时出错', error);
+      res.status(500).json({ success: false, message: '获取设备数据失败' });
+    }
   },
   
   /**

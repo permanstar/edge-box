@@ -2,13 +2,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>边缘盒子管理系统</title>
+    <title>管理员中心 - 边缘盒子管理系统</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>边缘盒子管理系统</h1>
+            <!-- 添加用户信息和登出按钮 -->
+            <div class="user-info">
+                <span id="username-display">管理员</span>
+                <button id="logout-button" class="btn btn-outline">登出</button>
+            </div>
             <div class="connection-status">
                 <span class="indicator" id="connection-indicator"></span>
                 <span id="connection-text">连接中...</span>
@@ -67,6 +72,7 @@
     <script src="js/websocket-service.js"></script>
     <script src="js/device-service.js"></script>
     <script src="js/ui-controller.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/admin.js"></script>
+    <!-- <script src="js/app.js"></script> -->
 </body>
 </html>

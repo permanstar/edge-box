@@ -62,10 +62,22 @@ class UIController {
      * @param {Object} system 系统数据
      */
     updateSystemMetrics(system) {
-        document.getElementById('cpu-value').textContent = system.cpu + '%';
-        document.getElementById('memory-value').textContent = system.memory + '%';
-        document.getElementById('storage-value').textContent = system.storage + '%';
-        document.getElementById('network-value').textContent = system.network === 'connected' ? '已连接' : '未连接';
+        // 添加防御性检查
+        if (!system) {
+            console.warn('系统数据不可用');
+            return;
+        }
+        
+        // 安全地获取DOM元素并更新
+        const cpuElement = document.getElementById('cpu-value');
+        const memoryElement = document.getElementById('memory-value');
+        const storageElement = document.getElementById('storage-value');
+        const networkElement = document.getElementById('network-value');
+        
+        if (cpuElement) cpuElement.textContent = system.cpu + '%';
+        if (memoryElement) memoryElement.textContent = system.memory + '%';
+        if (storageElement) storageElement.textContent = system.storage + '%';
+        if (networkElement) networkElement.textContent = system.network === 'connected' ? '已连接' : '未连接';
     }
     
     /**
