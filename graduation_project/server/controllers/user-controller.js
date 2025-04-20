@@ -74,43 +74,70 @@ module.exports = {
    */
   register: async (req, res) => {
     try {
-      const { username, password, role = 'user' } = req.body;
+      const { username, password } = req.body;
       
-      // 基本验证
+      // 输入验证
       if (!username || !password) {
-        return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
+        return res.status(400).json({ 
+          success: false, 
+          message: '用户名和密码不能为空' 
+        });
       }
       
-      // 权限检查 - 只有管理员可以创建管理员账户
-      if (role === 'admin' && (!req.user || req.user.role !== 'admin')) {
-        return res.status(403).json({ success: false, message: '只有管理员可以创建管理员账户' });
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '密码长度至少为6个字符' 
+        });
       }
       
       // 检查用户名是否已存在
-      const [existingUsers] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+      const [existingUsers] = await pool.query(
+        'SELECT id FROM users WHERE username = ?',
+        [username]
+      );
+      
       if (existingUsers.length > 0) {
-        return res.status(409).json({ success: false, message: '用户名已存在' });
+        return res.status(400).json({ 
+          success: false, 
+          message: '用户名已存在' 
+        });
+      }
+      
+      // 检查是否允许注册 - 可以根据系统配置决定是否开放注册
+      const registrationEnabled = true; // 从配置中读取
+      
+      if (!registrationEnabled) {
+        return res.status(403).json({ 
+          success: false, 
+          message: '系统当前不开放注册，请联系管理员' 
+        });
       }
       
       // 密码加密
+      const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(password, 10);
       
       // 创建新用户
       const [result] = await pool.query(
         'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-        [username, hashedPassword, role]
+        [username, hashedPassword, 'user'] // 默认为普通用户角色
       );
       
-      logger.info(`新用户 ${username} 已创建，角色: ${role}`);
+      logger.info(`新用户注册成功: ${username}`);
       
+      // 返回成功响应
       res.status(201).json({
         success: true,
-        message: '用户注册成功',
+        message: '注册成功',
         userId: result.insertId
       });
     } catch (error) {
-      logger.error('用户注册时出错', error);
-      res.status(500).json({ success: false, message: '注册失败，请稍后重试' });
+      logger.error('用户注册失败', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '注册失败，请稍后重试' 
+      });
     }
   },
   

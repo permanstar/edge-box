@@ -27,6 +27,117 @@ router.get('/api/admin/users', async (req, res) => {
   }
 });
 
+// 管理员创建用户
+router.post('/api/admin/users', async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    
+    // 输入验证
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
+    }
+    
+    // 验证角色
+    if (role && !['admin', 'user'].includes(role)) {
+      return res.status(400).json({ success: false, message: '无效的用户角色' });
+    }
+    
+    // 检查用户名是否已存在
+    const [existingUsers] = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+    
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ success: false, message: '用户名已存在' });
+    }
+    
+    // 密码加密
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // 创建用户
+    const [result] = await pool.query(
+      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      [username, hashedPassword, role || 'user']
+    );
+    
+    logger.info(`管理员 ${req.user.username} 创建了新用户: ${username} (角色: ${role || 'user'})`);
+    
+    res.status(201).json({
+      success: true,
+      message: '用户创建成功',
+      userId: result.insertId
+    });
+  } catch (error) {
+    logger.error('创建用户失败', error);
+    res.status(500).json({ success: false, message: '创建用户失败' });
+  }
+});
+
+// 修改用户角色
+router.put('/api/admin/users/:userId/role', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    // 验证角色
+    if (!role || !['admin', 'user'].includes(role)) {
+      return res.status(400).json({ success: false, message: '无效的用户角色' });
+    }
+    
+    // 检查用户是否存在
+    const [users] = await pool.query(
+      'SELECT username FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 更新角色
+    await pool.query(
+      'UPDATE users SET role = ? WHERE id = ?',
+      [role, userId]
+    );
+    
+    logger.info(`管理员 ${req.user.username} 将用户 ${users[0].username} 的角色修改为 ${role}`);
+    
+    res.json({ success: true, message: '用户角色更新成功' });
+  } catch (error) {
+    logger.error('修改用户角色失败', error);
+    res.status(500).json({ success: false, message: '修改用户角色失败' });
+  }
+});
+
+// 删除用户
+router.delete('/api/admin/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // 检查用户是否存在
+    const [users] = await pool.query(
+      'SELECT username FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 删除用户
+    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+    
+    logger.info(`管理员 ${req.user.username} 删除了用户 ${users[0].username}`);
+    
+    res.json({ success: true, message: '用户删除成功' });
+  } catch (error) {
+    logger.error('删除用户失败', error);
+    res.status(500).json({ success: false, message: '删除用户失败' });
+  }
+});
+
 // 获取所有设备
 router.get('/api/admin/devices', (req, res) => {
   try {

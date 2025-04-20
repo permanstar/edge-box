@@ -5,6 +5,9 @@ const userController = require('../controllers/user-controller');
 const permissionController = require('../controllers/permission-controller');
 const { authenticateUser, requireAdmin, checkDeviceAccess, checkDeviceReadAccess, adminOnlyDeviceControl } = require('../middlewares/auth-middleware');
 
+// 无需认证的路由
+router.post('/register', userController.register);
+
 // 用户认证相关路由
 router.post('/login', userController.login);
 router.post('/register', authenticateUser, requireAdmin, userController.register); // 只有管理员可以注册新用户

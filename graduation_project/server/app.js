@@ -32,6 +32,11 @@ app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
+// 公开路由 - 在路由保护中间件之前
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(config.PUBLIC_DIR, 'register.html'));
+});
+
 // 在静态文件之前添加页面路由
 app.get('/user', (req, res) => {
   // 添加调试日志

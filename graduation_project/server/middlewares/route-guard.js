@@ -9,7 +9,10 @@ function routeGuard(req, res, next) {
   // 允许不需要认证的路径通过
   const publicPaths = [
     '/login',
+    '/register',  // 添加注册页面
     '/api/login',
+    '/api/logout',
+    '/api/register',  // 添加注册API
     '/css/',
     '/js/',
     '/images/',
