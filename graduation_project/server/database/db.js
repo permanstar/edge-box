@@ -50,6 +50,18 @@ async function initDatabase() {
       );
       console.log('默认管理员账户已创建，用户名：admin，密码：admin123');
     }
+
+    const [users] = await pool.query('SELECT * FROM users WHERE role = ?', ['user']);
+    if (users.length === 0) {
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash('user123', 10);
+      await pool.query(
+        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+        ['user', hashedPassword, 'user']
+      );
+      console.log('默认普通账户已创建，用户名：user，密码：user123');
+    }
+    
   } catch (error) {
     console.error('数据库初始化失败:', error);
     throw error;
