@@ -124,7 +124,7 @@
             
             <div class="card">
                 <h3>创建新用户</h3>
-                <form id="create-user-form">
+                <form id="create-user-form" onsubmit="return handleCreateUserSubmit(event)">
                     <div class="form-group">
                         <label for="new-username">用户名</label>
                         <input type="text" id="new-username" required>
@@ -176,5 +176,48 @@
     <!-- 其他功能模块 -->
     <script src="js/admin-permissions.js"></script>
     <script src="js/admin-users.js"></script>  <!-- 添加这一行 -->
+
+    <!-- 添加在页面底部，在其他脚本之后 -->
+    <script>
+        // 直接在HTML中定义处理函数
+        async function handleCreateUserSubmit(event) {
+            event.preventDefault();
+            
+            try {
+                const username = document.getElementById('new-username').value;
+                const password = document.getElementById('new-password').value;
+                const role = document.getElementById('user-role').value;
+                
+                if (!username || !password) {
+                    alert('用户名和密码不能为空');
+                    return false;
+                }
+                
+                console.log('创建用户:', username, role);
+                
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || '创建用户失败');
+                }
+                
+                alert('用户创建成功！');
+                document.getElementById('create-user-form').reset();
+                return false;
+            } catch (error) {
+                console.error('创建用户失败:', error);
+                alert('创建用户失败: ' + error.message);
+                return false;
+            }
+        }
+    </script>
 </body>
 </html>

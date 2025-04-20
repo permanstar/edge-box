@@ -6,6 +6,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('user-management')) {
         initUserManagement();
     }
+    // 绑定用户管理表单
+    const createUserForm = document.getElementById('create-user-form');
+    if (createUserForm) {
+        console.log('找到创建用户表单，绑定提交事件');
+        createUserForm.addEventListener('submit', handleCreateUser);
+    } else {
+        console.error('未找到创建用户表单');
+    }
 });
 
 /**
@@ -134,6 +142,62 @@ async function createUser(event) {
     } catch (error) {
         console.error('创建用户失败:', error);
         showNotification('创建用户失败: ' + error.message, true);
+    }
+}
+
+/**
+ * 处理创建用户表单提交
+ */
+async function handleCreateUser(event) {
+    event.preventDefault();
+    console.log('提交创建用户表单');
+    
+    try {
+        // 获取表单数据
+        const username = document.getElementById('new-username').value;
+        const password = document.getElementById('new-password').value;
+        const role = document.getElementById('user-role').value;
+        
+        // 验证数据
+        if (!username || !password) {
+            alert('用户名和密码不能为空');
+            return;
+        }
+        
+        console.log('准备创建用户:', { username, role });
+        
+        // 调用API创建用户
+        const response = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password, role })
+        });
+        
+        console.log('API响应状态:', response.status);
+        
+        const data = await response.json();
+        console.log('API响应数据:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.message || '创建用户失败');
+        }
+        
+        // 清空表单
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+        
+        // 显示成功消息
+        alert('用户创建成功！');
+        
+        // 如果有用户列表，刷新它
+        if (typeof loadUsers === 'function') {
+            loadUsers();
+        }
+    } catch (error) {
+        console.error('创建用户失败:', error);
+        alert('创建用户失败: ' + error.message);
     }
 }
 

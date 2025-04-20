@@ -8,71 +8,80 @@ const { pool } = require('../database/db');
 // 应用管理员权限中间件
 router.use(authenticateUser, requireAdmin);
 
-// 获取所有普通用户
+// 获取所有用户
 router.get('/api/admin/users', async (req, res) => {
-  try {
-    // 查询数据库获取所有普通用户
-    const [users] = await pool.query(`
-      SELECT id, username, role, created_at, last_login 
-      FROM users 
-      WHERE role = 'user'
-      ORDER BY username
-    `);
-    
-    res.json({ success: true, users });
-    logger.info(`管理员 ${req.user.username} 获取用户列表，返回 ${users.length} 个用户`);
-  } catch (error) {
-    logger.error('获取用户列表失败', error);
-    res.status(500).json({ success: false, message: '获取用户列表失败' });
-  }
+    try {
+        // 检查是否有管理员权限
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: '需要管理员权限' });
+        }
+        
+        // 查询所有用户
+        const [users] = await pool.query(
+            'SELECT id, username, role, created_at, last_login FROM users ORDER BY id'
+        );
+        
+        res.json({
+            success: true,
+            users: users
+        });
+    } catch (error) {
+        logger.error('获取用户列表失败', error);
+        res.status(500).json({ success: false, message: '获取用户列表失败' });
+    }
 });
 
-// 管理员创建用户
+// 创建新用户
 router.post('/api/admin/users', async (req, res) => {
-  try {
-    const { username, password, role } = req.body;
-    
-    // 输入验证
-    if (!username || !password) {
-      return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
+    try {
+        // 检查是否有管理员权限
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: '需要管理员权限' });
+        }
+        
+        const { username, password, role } = req.body;
+        
+        // 验证输入
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
+        }
+        
+        // 检查角色值
+        if (role && !['admin', 'user'].includes(role)) {
+            return res.status(400).json({ success: false, message: '无效的角色值' });
+        }
+        
+        // 检查用户名是否已存在
+        const [existingUsers] = await pool.query(
+            'SELECT id FROM users WHERE username = ?',
+            [username]
+        );
+        
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ success: false, message: '用户名已存在' });
+        }
+        
+        // 加密密码
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // 插入新用户
+        const [result] = await pool.query(
+            'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+            [username, hashedPassword, role || 'user']
+        );
+        
+        logger.info(`管理员 ${req.user.username} 创建了新用户: ${username}`);
+        
+        res.status(201).json({
+            success: true,
+            message: '用户创建成功',
+            userId: result.insertId
+        });
+    } catch (error) {
+        logger.error('创建用户失败', error);
+        res.status(500).json({ success: false, message: '创建用户失败，服务器错误' });
     }
-    
-    // 验证角色
-    if (role && !['admin', 'user'].includes(role)) {
-      return res.status(400).json({ success: false, message: '无效的用户角色' });
-    }
-    
-    // 检查用户名是否已存在
-    const [existingUsers] = await pool.query(
-      'SELECT id FROM users WHERE username = ?',
-      [username]
-    );
-    
-    if (existingUsers.length > 0) {
-      return res.status(400).json({ success: false, message: '用户名已存在' });
-    }
-    
-    // 密码加密
-    const bcrypt = require('bcrypt');
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // 创建用户
-    const [result] = await pool.query(
-      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-      [username, hashedPassword, role || 'user']
-    );
-    
-    logger.info(`管理员 ${req.user.username} 创建了新用户: ${username} (角色: ${role || 'user'})`);
-    
-    res.status(201).json({
-      success: true,
-      message: '用户创建成功',
-      userId: result.insertId
-    });
-  } catch (error) {
-    logger.error('创建用户失败', error);
-    res.status(500).json({ success: false, message: '创建用户失败' });
-  }
 });
 
 // 修改用户角色
@@ -275,5 +284,38 @@ router.delete('/api/admin/permissions/:userId/:deviceId', async (req, res) => {
     res.status(500).json({ success: false, message: '移除权限失败' });
   }
 });
+
+// 测试路由 - 仅开发环境使用
+if (process.env.NODE_ENV !== 'production') {
+    router.get('/api/admin/test-create-user', async (req, res) => {
+        try {
+            const testUsername = 'testuser_' + Date.now();
+            const testPassword = 'password123';
+            
+            // 加密密码
+            const bcrypt = require('bcrypt');
+            const hashedPassword = await bcrypt.hash(testPassword, 10);
+            
+            // 插入新用户
+            const [result] = await pool.query(
+                'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+                [testUsername, hashedPassword, 'user']
+            );
+            
+            res.json({
+                success: true,
+                message: '测试用户创建成功',
+                user: {
+                    id: result.insertId,
+                    username: testUsername,
+                    role: 'user'
+                }
+            });
+        } catch (error) {
+            console.error('测试创建用户失败:', error);
+            res.status(500).json({ success: false, message: '测试创建用户失败', error: error.message });
+        }
+    });
+}
 
 module.exports = router;
