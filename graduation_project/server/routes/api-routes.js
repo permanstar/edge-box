@@ -3,7 +3,7 @@ const router = express.Router();
 const deviceController = require('../controllers/device-controller');
 const userController = require('../controllers/user-controller');
 const permissionController = require('../controllers/permission-controller');
-const { authenticateUser, requireAdmin, checkDeviceAccess } = require('../middlewares/auth-middleware');
+const { authenticateUser, requireAdmin, checkDeviceAccess, checkDeviceReadAccess, adminOnlyDeviceControl } = require('../middlewares/auth-middleware');
 
 // 用户认证相关路由
 router.post('/login', userController.login);
@@ -16,12 +16,13 @@ router.post('/permissions/device', authenticateUser, requireAdmin, permissionCon
 router.delete('/permissions/device/:userId/:deviceId', authenticateUser, requireAdmin, permissionController.removeDeviceFromUser);
 router.get('/permissions/user/:userId', authenticateUser, requireAdmin, permissionController.getUserDevices);
 
-// 设备数据相关路由
+// 设备数据相关路由 - 普通用户可以访问
 router.get('/data', authenticateUser, deviceController.getData);
 router.get('/status', authenticateUser, deviceController.getStatus);
+router.get('/devices/:deviceId/data', authenticateUser, checkDeviceReadAccess, deviceController.getDeviceData);
 
-// 设备控制相关路由（需要检查设备访问权限）
-router.post('/devices/:deviceId/toggle', authenticateUser, checkDeviceAccess, deviceController.toggleDevice);
-router.post('/devices/batch-toggle', authenticateUser, deviceController.batchToggleDevices);
+// 设备控制相关路由 - 只有管理员可以访问
+router.post('/devices/:deviceId/toggle', authenticateUser, adminOnlyDeviceControl, deviceController.toggleDevice);
+router.post('/devices/batch-toggle', authenticateUser, adminOnlyDeviceControl, deviceController.batchToggleDevices);
 
 module.exports = router;

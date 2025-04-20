@@ -57,6 +57,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
+    
+    // 设置导航
+    setupNavigation();
+    
+    // 初始化权限管理功能
+    initPermissionsManagement();
 });
 
 /**
@@ -121,3 +127,29 @@ window.addEventListener('beforeunload', () => {
         console.error('关闭WebSocket连接失败:', e);
     }
 });
+
+/**
+ * 设置导航
+ */
+function setupNavigation() {
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 获取目标部分ID
+            const targetId = this.getAttribute('data-section');
+            
+            // 移除所有active类
+            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // 添加active类
+            this.classList.add('active');
+            document.getElementById(targetId).style.display = 'block';
+        });
+    });
+}

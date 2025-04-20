@@ -266,5 +266,39 @@ module.exports = {
       
       logger.debug(`已发送命令到设备 ${deviceId}，命令ID: ${commandId}，等待响应 (超时: ${timeout}ms)`);
     });
+  },
+
+  /**
+   * 获取特定设备的数据
+   * @param {express.Request} req 请求对象
+   * @param {express.Response} res 响应对象
+   */
+  getDeviceData: async (req, res) => {
+    try {
+      const { deviceId } = req.params;
+      const data = dataStore.getData();
+      
+      // 查找设备
+      const device = data.devices?.find(d => d.id === deviceId);
+      
+      if (!device) {
+        return res.status(404).json({ 
+          success: false, 
+          message: '设备未找到' 
+        });
+      }
+      
+      // 返回设备数据
+      res.json({
+        success: true,
+        device
+      });
+    } catch (error) {
+      logger.error(`获取设备 ${req.params.deviceId} 数据时出错`, error);
+      res.status(500).json({ 
+        success: false, 
+        message: '获取设备数据失败' 
+      });
+    }
   }
 };

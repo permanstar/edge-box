@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户中心 - 边缘盒子管理系统</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>边缘盒子管理系统 - 用户界面</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/user.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <header>
+        <div class="header-container">
             <h1>边缘盒子管理系统</h1>
             <div class="user-info">
-                <span id="username-display">用户</span>
-                <button id="logout-button" class="btn btn-outline">登出</button>
-            </div>
-            <div class="connection-status">
-                <span class="indicator" id="connection-indicator"></span>
-                <span id="connection-text">连接中...</span>
+                <span id="username-display">加载中...</span>
+                <button id="logout-btn">退出登录</button>
             </div>
         </div>
+    </header>
+
+    <main>
+        <div class="dashboard-header">
+            <h2>我的设备</h2>
+            <button id="refresh-btn" class="btn">刷新数据</button>
+        </div>
         
-        <div class="card">
-            <h2>已授权设备</h2>
-            <div id="devices-container">
-                <div class="loading">加载设备数据...</div>
-            </div>
+        <div id="devices-container" class="devices-grid">
+            <div class="loading-message">加载设备数据中...</div>
         </div>
         
         <div class="timestamp" id="timestamp">最后更新时间: --</div>
         
+        <!-- 通知元素 -->
         <div class="notification" id="notification"></div>
-    </div>
+    </main>
 
-    <script src="js/utils.js"></script>
-    <script src="js/websocket-service.js"></script>
-    <script src="js/device-service.js"></script>
-    <script src="js/ui-controller.js"></script>
-    <script src="js/user.js"></script>
+    <!-- JavaScript引入 -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/websocket-service.js"></script>
+    <script src="/js/user-ui.js"></script>
+    <script src="/js/user.js"></script>
 </body>
 </html>
