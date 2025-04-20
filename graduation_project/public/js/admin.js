@@ -153,3 +153,71 @@ function setupNavigation() {
         });
     });
 }
+
+/**
+ * 显示通知消息
+ * @param {string} message 消息内容
+ * @param {boolean} isError 是否为错误消息
+ */
+function showNotification(message, isError = false) {
+  // 检查是否存在通知容器
+  let notificationContainer = document.getElementById('notification-container');
+  
+  if (!notificationContainer) {
+    // 创建通知容器
+    notificationContainer = document.createElement('div');
+    notificationContainer.id = 'notification-container';
+    notificationContainer.style.position = 'fixed';
+    notificationContainer.style.top = '20px';
+    notificationContainer.style.right = '20px';
+    notificationContainer.style.zIndex = '1000';
+    document.body.appendChild(notificationContainer);
+  }
+  
+  // 创建通知元素
+  const notification = document.createElement('div');
+  notification.className = `notification ${isError ? 'error' : 'success'}`;
+  notification.textContent = message;
+  notification.style.backgroundColor = isError ? '#f44336' : '#4CAF50';
+  notification.style.color = 'white';
+  notification.style.padding = '15px';
+  notification.style.marginBottom = '10px';
+  notification.style.borderRadius = '4px';
+  notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  notification.style.minWidth = '250px';
+  
+  // 添加关闭按钮
+  const closeBtn = document.createElement('span');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.style.marginLeft = '15px';
+  closeBtn.style.float = 'right';
+  closeBtn.style.fontSize = '20px';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.onclick = function() {
+    notification.remove();
+  };
+  notification.appendChild(closeBtn);
+  
+  // 添加到容器
+  notificationContainer.appendChild(notification);
+  
+  // 5秒后自动关闭
+  setTimeout(() => {
+    notification.remove();
+  }, 5000);
+}
+
+/**
+ * 初始化权限管理包括加载用户和设备
+ */
+function initPermissionsManagement() {
+    // 立即加载用户和设备列表
+    loadUsers();
+    loadDevices();
+    
+    // 绑定表单提交事件
+    document.getElementById('assign-permission-form').addEventListener('submit', assignPermission);
+    
+    // 绑定用户筛选事件
+    document.getElementById('filter-user').addEventListener('change', filterPermissionsByUser);
+}

@@ -35,9 +35,13 @@ module.exports = {
       
       // 创建JWT令牌
       const token = jwt.sign(
-        { userId: user.id, username: user.username, role: user.role },
+        { 
+          userId: user.id,      // 改为 userId 以保持一致性
+          username: user.username, 
+          role: user.role 
+        }, 
         config.JWT_SECRET,
-        { expiresIn: config.JWT_EXPIRES_IN }
+        { expiresIn: '24h' }
       );
       
       // 设置cookie
@@ -123,7 +127,13 @@ module.exports = {
    */
   getProfile: async (req, res) => {
     try {
-      const userId = req.user.userId;
+      // 确保使用一致的用户ID字段
+      const userId = req.user.userId || req.user.id;
+      
+      if (!userId) {
+        logger.error('无法获取用户ID', req.user);
+        return res.status(400).json({ success: false, message: '无效的用户信息' });
+      }
       
       const [users] = await pool.query(
         'SELECT id, username, role, created_at, last_login FROM users WHERE id = ?',

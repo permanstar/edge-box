@@ -48,7 +48,7 @@ class WebSocketService {
         // 发送最新数据给新连接的客户端
         const latestData = dataStore.getData();
         if (Object.keys(latestData).length > 0) {
-          ws.send(JSON.stringify(latestData));
+          sendFilteredDataToUser(ws, user, latestData);
           logger.debug('已发送最新数据到新连接的客户端');
         }
         
@@ -156,6 +156,44 @@ function parseCookies(cookieString) {
   });
   
   return cookies;
+}
+
+/**
+ * 根据用户角色和权限发送设备数据
+ * @param {WebSocket} ws WebSocket连接
+ * @param {Object} user 用户信息
+ * @param {Object} data 原始数据
+ */
+async function sendFilteredDataToUser(ws, user, data) {
+  try {
+    // 如果是管理员，发送所有数据
+    if (user.role === 'admin') {
+      ws.send(JSON.stringify(data));
+      return;
+    }
+    
+    // 获取用户有权限的设备
+    const { pool } = require('../database/db');
+    const [permissions] = await pool.query(
+      'SELECT device_id FROM device_permissions WHERE user_id = ?',
+      [user.userId || user.id]
+    );
+    
+    const allowedDeviceIds = permissions.map(p => p.device_id);
+    
+    // 过滤数据只包含有权限的设备
+    const filteredData = {
+      ...data,
+      devices: data.devices ? data.devices.filter(device => 
+        allowedDeviceIds.includes(device.id)
+      ) : []
+    };
+    
+    // 发送过滤后的数据
+    ws.send(JSON.stringify(filteredData));
+  } catch (error) {
+    logger.error('发送过滤数据时出错', error);
+  }
 }
 
 // 导出单例实例

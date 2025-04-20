@@ -42,17 +42,38 @@ function routeGuard(req, res, next) {
     const decoded = jwt.verify(token, config.JWT_SECRET);
     req.user = decoded;
     
-    // 只有管理员才能访问管理员页面
-    if (req.path === '/admin' && req.user.role !== 'admin') {
-      logger.warn(`非管理员用户 ${req.user.username} 尝试访问管理员页面`);
-      return res.status(403).send('权限不足，需要管理员权限');
+    // 添加调试日志
+    logger.debug(`用户访问 ${req.path}: ${JSON.stringify(req.user)}`);
+    
+    // 管理员路径组
+    const adminPaths = ['/admin', '/admin.html', '/api/admin'];
+
+    // 用户路径组
+    const userPaths = ['/user', '/user.html', '/api/user'];
+
+    // 访问检查
+    if (adminPaths.some(path => req.path === path || req.path.startsWith(path))) {
+      // 管理员路径检查逻辑
+      if (req.user.role !== 'admin') {
+        logger.warn(`非管理员用户 ${req.user.username} 尝试访问管理员页面`);
+        
+        // 如果是API请求，返回403错误
+        if (req.path.startsWith('/api/')) {
+          return res.status(403).json({ success: false, message: '权限不足，需要管理员权限' });
+        }
+        
+        // 重定向普通用户到用户页面
+        return res.redirect('/user');
+      }
+    } else if (userPaths.some(path => req.path === path || req.path.startsWith(path))) {
+      // 用户路径检查逻辑
+      if (req.user.role === 'admin') {
+        return res.redirect('/admin');
+      }
+      // 普通用户可以直接访问用户页面，不需要额外检查
     }
     
-    // 只有普通用户才能访问用户页面（管理员也可以访问，但将被重定向到管理员页面）
-    if (req.path === '/user' && req.user.role === 'admin') {
-      return res.redirect('/admin');
-    }
-    
+    // 通过权限检查，允许继续访问
     next();
   } catch (error) {
     logger.error('令牌验证失败', error);

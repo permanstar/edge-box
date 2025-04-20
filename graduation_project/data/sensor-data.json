@@ -1,14 +1,14 @@
 {
-  "timestamp": 1745175748782,
+  "timestamp": 1745180964130,
   "devices": [
     {
       "id": "device-001",
       "name": "温度传感器 1",
       "type": "temperature",
-      "value": "28.6",
+      "value": "22.0",
       "unit": "°C",
       "status": "online",
-      "lastUpdated": 1745175748782,
+      "lastUpdated": 1745180964130,
       "lastOfflineTime": 1745031892510,
       "isRegistered": true,
       "lastOnlineTime": 1745031898889
@@ -17,31 +17,31 @@
       "id": "device-002",
       "name": "湿度传感器 1",
       "type": "humidity",
-      "value": "60.4",
+      "value": "56.0",
       "unit": "%",
       "status": "online",
       "isRegistered": true,
       "lastOnlineTime": 1745031900171,
-      "lastUpdated": 1745175748782,
+      "lastUpdated": 1745180964130,
       "lastOfflineTime": 1745031897267
     },
     {
       "id": "device-003",
       "name": "光照传感器 1",
       "type": "light",
-      "value": 392,
+      "value": 619,
       "unit": "lux",
       "status": "online",
-      "lastUpdated": 1745175748782,
+      "lastUpdated": 1745180964130,
       "lastOfflineTime": 1745031894131,
       "isRegistered": true,
       "lastOnlineTime": 1745031901060
     }
   ],
   "system": {
-    "cpu": 46,
-    "memory": 64,
-    "storage": 41,
+    "cpu": 25,
+    "memory": 65,
+    "storage": 54,
     "network": "connected"
   }
 }

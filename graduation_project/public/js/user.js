@@ -64,10 +64,49 @@ async function initializeUserInterface() {
         // 获取初始数据
         await fetchAndDisplayDevices();
         
-        // 订阅WebSocket更新
+        // 获取用户权限信息
+        let userPermissions = null;
+
+        // 首先获取用户有权限的设备ID列表
+        async function getUserPermissions() {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) {
+                    throw new Error('获取用户权限失败');
+                }
+                const userData = await response.json();
+                userPermissions = userData.devices;
+                return userPermissions;
+            } catch (error) {
+                console.error('获取用户权限失败:', error);
+                return [];
+            }
+        }
+
+        // 等待获取权限后再初始化WebSocket
+        await getUserPermissions();
+
+        // 订阅WebSocket更新，添加过滤逻辑
         wsService.subscribe(data => {
             console.log('收到WebSocket数据更新:', data);
-            updateDevicesDisplay(data);
+            
+            // 如果有设备数据且不是管理员，进行过滤
+            if (data.devices && Array.isArray(data.devices) && userPermissions) {
+                // 如果不是'all'（管理员权限标记），则过滤设备
+                if (userPermissions !== 'all' && Array.isArray(userPermissions)) {
+                    const filteredData = {
+                        ...data,
+                        devices: data.devices.filter(device => 
+                            userPermissions.includes(device.id)
+                        )
+                    };
+                    updateDevicesDisplay(filteredData);
+                } else {
+                    updateDevicesDisplay(data);
+                }
+            } else {
+                updateDevicesDisplay(data);
+            }
         });
         
         // 初始化WebSocket
