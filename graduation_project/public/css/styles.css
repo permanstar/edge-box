@@ -429,3 +429,33 @@ h1, h2, h3 {
 .retry-btn:hover {
   background-color: #f57c00;
 }
+
+/* 这些样式可以添加到您的 styles.css 文件中 */
+.tab-content {
+    display: none;
+}
+
+.admin-nav {
+    display: flex;
+    margin: 20px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.nav-item {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #333;
+}
+
+.nav-item:hover {
+    background-color: #f5f5f5;
+}
+
+.nav-item.active {
+    border-bottom: 3px solid #4285f4;
+    color: #4285f4;
+    font-weight: bold;
+}

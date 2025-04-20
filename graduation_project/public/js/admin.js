@@ -78,6 +78,9 @@ async function initializeAdminInterface() {
         // 初始化UI
         uiController.init();
         
+        // 添加导航功能
+        setupNavigation();
+        
         // 获取初始数据
         console.log('正在获取初始数据...');
         const initialData = await deviceService.fetchDevices();
@@ -129,29 +132,65 @@ window.addEventListener('beforeunload', () => {
 });
 
 /**
- * 设置导航
+ * 设置导航功能
  */
 function setupNavigation() {
-    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    // 默认显示设备管理区域
+    showTab('devices-management'); // 如果您有这个ID的话
     
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // 获取目标部分ID
-            const targetId = this.getAttribute('data-section');
-            
-            // 移除所有active类
-            navLinks.forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.style.display = 'none';
+    // 添加导航按钮或菜单
+    const navItems = document.querySelectorAll('.nav-item'); // 假设您有导航项
+    if (navItems.length > 0) {
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                showTab(tabId);
             });
-            
-            // 添加active类
-            this.classList.add('active');
-            document.getElementById(targetId).style.display = 'block';
         });
+    } else {
+        // 如果没有导航菜单，您可以在这里添加一个
+        const header = document.querySelector('.header');
+        if (header) {
+            const nav = document.createElement('div');
+            nav.className = 'admin-nav';
+            nav.innerHTML = `
+                <button class="nav-item active" data-tab="devices-management">设备管理</button>
+                <button class="nav-item" data-tab="permissions-management">权限管理</button>
+                <button class="nav-item" data-tab="user-management">用户管理</button>
+            `;
+            header.appendChild(nav);
+            
+            // 绑定事件
+            const buttons = nav.querySelectorAll('.nav-item');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 更新激活状态
+                    buttons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 显示对应的标签页
+                    const tabId = this.getAttribute('data-tab');
+                    showTab(tabId);
+                });
+            });
+        }
+    }
+}
+
+/**
+ * 显示指定的标签页
+ */
+function showTab(tabId) {
+    // 隐藏所有标签页
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
     });
+    
+    // 显示指定的标签页
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+    }
 }
 
 /**
