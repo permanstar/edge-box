@@ -35,11 +35,6 @@ router.get('/api/admin/users', async (req, res) => {
 // 创建新用户
 router.post('/api/admin/users', async (req, res) => {
     try {
-        // 检查是否有管理员权限
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: '需要管理员权限' });
-        }
-        
         const { username, password, role } = req.body;
         
         // 验证输入
@@ -52,14 +47,15 @@ router.post('/api/admin/users', async (req, res) => {
             return res.status(400).json({ success: false, message: '无效的角色值' });
         }
         
-        // 检查用户名是否已存在
+        // 查询用户名是否已存在
         const [existingUsers] = await pool.query(
             'SELECT id FROM users WHERE username = ?',
             [username]
         );
         
         if (existingUsers.length > 0) {
-            return res.status(400).json({ success: false, message: '用户名已存在' });
+            logger.warn(`尝试创建已存在的用户名: ${username}`);
+            return res.status(409).json({ success: false, message: '用户名已存在' });
         }
         
         // 加密密码
@@ -72,6 +68,7 @@ router.post('/api/admin/users', async (req, res) => {
             [username, hashedPassword, role || 'user']
         );
         
+        // 插入成功后记录日志
         logger.info(`管理员 ${req.user.username} 创建了新用户: ${username}`);
         
         res.status(201).json({
@@ -80,8 +77,14 @@ router.post('/api/admin/users', async (req, res) => {
             userId: result.insertId
         });
     } catch (error) {
-        logger.error('创建用户失败', error);
-        res.status(500).json({ success: false, message: '创建用户失败，服务器错误' });
+        // 使用更详细的错误处理，特别是针对重复键错误
+        if (error.code === 'ER_DUP_ENTRY') {
+            logger.error(`创建用户失败，用户名已存在: ${req.body.username}`);
+            return res.status(409).json({ success: false, message: '用户名已存在' });
+        } else {
+            logger.error('创建用户失败', error);
+            return res.status(500).json({ success: false, message: '创建用户失败，服务器错误' });
+        }
     }
 });
 

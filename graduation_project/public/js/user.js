@@ -182,13 +182,23 @@ function updateTimestamp(timestamp) {
  * 显示通知
  */
 function showNotification(message, isError = false) {
+    // 如果有通知元素，使用它
     const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.className = `notification ${isError ? 'error' : 'success'}`;
-    notification.style.display = 'block';
+    if (notification) {
+        notification.textContent = message;
+        notification.className = `notification ${isError ? 'error' : 'success'} show`;
+        
+        // 3秒后隐藏通知
+        setTimeout(() => {
+            notification.className = 'notification';
+        }, 3000);
+        return;
+    }
     
-    // 自动隐藏
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 5000);
+    // 否则使用alert
+    if (isError) {
+        alert('错误: ' + message);
+    } else {
+        alert(message);
+    }
 }

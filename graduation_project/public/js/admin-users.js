@@ -6,7 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('user-management')) {
         initUserManagement();
     }
-    // 绑定用户管理表单
+    
+    // 移除这段重复的绑定代码
+    /*
     const createUserForm = document.getElementById('create-user-form');
     if (createUserForm) {
         console.log('找到创建用户表单，绑定提交事件');
@@ -14,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('未找到创建用户表单');
     }
+    */
 });
 
 /**
@@ -23,8 +26,23 @@ function initUserManagement() {
     // 加载用户列表
     loadUsers();
     
-    // 绑定创建用户表单
-    document.getElementById('create-user-form').addEventListener('submit', createUser);
+    // 使用克隆节点方法彻底清除旧的事件监听器
+    const originalForm = document.getElementById('create-user-form');
+    if (originalForm) {
+        console.log('找到创建用户表单');
+        
+        // 克隆节点，不复制事件处理程序
+        const newForm = originalForm.cloneNode(true);
+        
+        // 用新表单替换旧表单
+        originalForm.parentNode.replaceChild(newForm, originalForm);
+        
+        // 绑定事件处理器到新表单
+        newForm.addEventListener('submit', createUser);
+        console.log('已绑定用户创建表单事件');
+    } else {
+        console.error('未找到创建用户表单');
+    }
 }
 
 /**
@@ -107,6 +125,22 @@ function displayUsers(users) {
 async function createUser(event) {
     event.preventDefault();
     
+    // 防止表单重复提交 - 检查是否已经在处理中
+    if (this.dataset.processing === 'true') {
+        console.log('表单已在处理中，忽略重复提交');
+        return;
+    }
+    
+    // 标记表单正在处理
+    this.dataset.processing = 'true';
+    
+    // 禁用提交按钮
+    const submitButton = this.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = '处理中...';
+    }
+    
     try {
         const username = document.getElementById('new-username').value;
         const password = document.getElementById('new-password').value;
@@ -118,6 +152,8 @@ async function createUser(event) {
             return;
         }
         
+        console.log('准备创建用户:', username, role);
+        
         const response = await fetch('/api/admin/users', {
             method: 'POST',
             headers: {
@@ -133,72 +169,25 @@ async function createUser(event) {
         }
         
         // 清空表单
-        document.getElementById('create-user-form').reset();
+        this.reset();
         
-        // 显示成功消息
-        showNotification('用户创建成功');
+        // 确保使用这种方式调用通知函数
+        showNotification('用户创建成功', false);
         
         // 重新加载用户列表
         loadUsers();
     } catch (error) {
         console.error('创建用户失败:', error);
         showNotification('创建用户失败: ' + error.message, true);
-    }
-}
-
-/**
- * 处理创建用户表单提交
- */
-async function handleCreateUser(event) {
-    event.preventDefault();
-    console.log('提交创建用户表单');
-    
-    try {
-        // 获取表单数据
-        const username = document.getElementById('new-username').value;
-        const password = document.getElementById('new-password').value;
-        const role = document.getElementById('user-role').value;
+    } finally {
+        // 无论成功失败，重置表单状态
+        this.dataset.processing = 'false';
         
-        // 验证数据
-        if (!username || !password) {
-            alert('用户名和密码不能为空');
-            return;
+        // 恢复提交按钮
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = '创建用户';
         }
-        
-        console.log('准备创建用户:', { username, role });
-        
-        // 调用API创建用户
-        const response = await fetch('/api/admin/users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, password, role })
-        });
-        
-        console.log('API响应状态:', response.status);
-        
-        const data = await response.json();
-        console.log('API响应数据:', data);
-        
-        if (!response.ok) {
-            throw new Error(data.message || '创建用户失败');
-        }
-        
-        // 清空表单
-        document.getElementById('new-username').value = '';
-        document.getElementById('new-password').value = '';
-        
-        // 显示成功消息
-        alert('用户创建成功！');
-        
-        // 如果有用户列表，刷新它
-        if (typeof loadUsers === 'function') {
-            loadUsers();
-        }
-    } catch (error) {
-        console.error('创建用户失败:', error);
-        alert('创建用户失败: ' + error.message);
     }
 }
 
@@ -236,25 +225,6 @@ async function changeUserRole() {
         
         if (!response.ok) {
             throw new Error(data.message || '修改用户角色失败');
-        }
-        
-        // 如果用户从普通用户升级为管理员，则清除其设备绑定关系
-        if (currentRole === 'user' && newRole === 'admin') {
-            console.info(`用户 ${data.username} 从普通用户升级为管理员，正在清除设备绑定关系`);
-            
-            // 获取该用户绑定的设备数
-            const [deviceCount] = await connection.query(
-                'SELECT COUNT(*) as count FROM device_permissions WHERE user_id = ?',
-                [userId]
-            );
-            
-            // 删除该用户的所有设备绑定关系
-            await connection.query(
-                'DELETE FROM device_permissions WHERE user_id = ?',
-                [userId]
-            );
-            
-            console.info(`已清除用户 ${data.username} 的 ${deviceCount[0].count} 个设备绑定关系`);
         }
         
         // 显示成功消息
@@ -322,4 +292,48 @@ function formatDateTime(timestamp) {
     
     const date = new Date(timestamp);
     return date.toLocaleString('zh-CN');
+}
+
+/**
+ * 防抖函数
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+/**
+ * 显示通知
+ */
+function showNotification(message, isError = false) {
+    console.log('===== showNotification 被调用 =====');
+    console.log(`消息: ${message}`);
+    console.log(`是否错误: ${isError}`);
+    
+    // 尝试在控制台记录通知
+    console.log(`显示通知: ${message}, 错误=${isError}`);
+    
+    // 如果有通知元素，使用它
+    const notification = document.getElementById('notification');
+    if (notification) {
+        notification.textContent = message;
+        notification.className = `notification ${isError ? 'error' : 'success'} show`;
+        
+        // 3秒后隐藏通知
+        setTimeout(() => {
+            notification.className = 'notification';
+        }, 3000);
+        return;
+    }
+    
+    // 否则使用alert
+    if (isError) {
+        alert('错误: ' + message);
+    } else {
+        alert(message);
+    }
 }

@@ -1,40 +1,38 @@
 {
-  "timestamp": 1745245962070,
+  "timestamp": 1745249548925,
   "devices": [
     {
       "id": "device-001",
       "name": "温度传感器 1",
       "type": "temperature",
-      "value": "24.6",
+      "value": "23.3",
       "unit": "°C",
       "status": "online",
-      "lastUpdated": 1745245962070,
-      "lastOfflineTime": 1745227443780,
-      "lastOnlineTime": 1745227448699
+      "lastUpdated": 1745249548925
     },
     {
       "id": "device-002",
       "name": "湿度传感器 1",
       "type": "humidity",
-      "value": "50.6",
+      "value": "73.6",
       "unit": "%",
       "status": "online",
-      "lastUpdated": 1745245962070
+      "lastUpdated": 1745249548925
     },
     {
       "id": "device-003",
       "name": "光照传感器 1",
       "type": "light",
-      "value": 593,
+      "value": 557,
       "unit": "lux",
       "status": "online",
-      "lastUpdated": 1745245962070
+      "lastUpdated": 1745249548925
     }
   ],
   "system": {
-    "cpu": 63,
-    "memory": 35,
-    "storage": 48,
+    "cpu": 27,
+    "memory": 51,
+    "storage": 33,
     "network": "connected"
   }
 }
