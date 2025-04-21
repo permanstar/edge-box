@@ -82,7 +82,8 @@ function displayUsers(users) {
                 </button>
                 <button class="btn btn-sm btn-danger delete-user-btn" 
                         data-user-id="${user.id}" 
-                        data-username="${user.username}">
+                        data-username="${user.username}"
+                        data-role="${user.role}">
                     删除
                 </button>
             </td>
@@ -210,7 +211,16 @@ async function changeUserRole() {
         const currentRole = this.getAttribute('data-current-role');
         const newRole = currentRole === 'admin' ? 'user' : 'admin';
         
-        if (!confirm(`确定要将此用户${newRole === 'admin' ? '升级为管理员' : '降级为普通用户'}吗？`)) {
+        let confirmMessage = newRole === 'admin' 
+            ? '确定要将此用户升级为管理员吗？这将同时删除该用户的所有设备绑定关系，因为管理员拥有所有设备的访问权限。' 
+            : '确定要将此用户降级为普通用户吗？降级后该用户将失去对所有设备的访问权限，需要重新分配设备权限。';
+            
+        // 对管理员降级添加特殊警告
+        if (currentRole === 'admin') {
+            confirmMessage += ' 注意：如果这是最后一个管理员账户，降级将被阻止。';
+        }
+            
+        if (!confirm(confirmMessage)) {
             return;
         }
         
@@ -228,8 +238,34 @@ async function changeUserRole() {
             throw new Error(data.message || '修改用户角色失败');
         }
         
+        // 如果用户从普通用户升级为管理员，则清除其设备绑定关系
+        if (currentRole === 'user' && newRole === 'admin') {
+            console.info(`用户 ${data.username} 从普通用户升级为管理员，正在清除设备绑定关系`);
+            
+            // 获取该用户绑定的设备数
+            const [deviceCount] = await connection.query(
+                'SELECT COUNT(*) as count FROM device_permissions WHERE user_id = ?',
+                [userId]
+            );
+            
+            // 删除该用户的所有设备绑定关系
+            await connection.query(
+                'DELETE FROM device_permissions WHERE user_id = ?',
+                [userId]
+            );
+            
+            console.info(`已清除用户 ${data.username} 的 ${deviceCount[0].count} 个设备绑定关系`);
+        }
+        
         // 显示成功消息
-        showNotification('用户角色修改成功');
+        let successMessage = '用户角色修改成功';
+        if (data.clearedPermissions) {
+            successMessage += `，已清除该用户的 ${data.permissionCount} 个设备绑定关系`;
+        } else if (newRole === 'user') {
+            successMessage += '，请前往权限管理页面为该用户分配设备权限';
+        }
+        
+        showNotification(successMessage);
         
         // 重新加载用户列表
         loadUsers();
@@ -246,8 +282,14 @@ async function deleteUser() {
     try {
         const userId = this.getAttribute('data-user-id');
         const username = this.getAttribute('data-username');
+        const isAdmin = this.getAttribute('data-role') === 'admin';
         
-        if (!confirm(`确定要删除用户 "${username}" 吗？此操作不可撤销。`)) {
+        let confirmMessage = `确定要删除用户 "${username}" 吗？此操作不可撤销。`;
+        if (isAdmin) {
+            confirmMessage += ' 注意：如果这是最后一个管理员账户，删除将被阻止。';
+        }
+        
+        if (!confirm(confirmMessage)) {
             return;
         }
         

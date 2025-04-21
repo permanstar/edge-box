@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const config = require('../config');
+const logger = require('../utils/logger'); // 确保引入了logger
 
 // 创建连接池
 const pool = mysql.createPool({
@@ -68,7 +69,38 @@ async function initDatabase() {
   }
 }
 
+/**
+ * 清除用户所有设备权限 (不再使用，相关功能已移至permission-controller.js)
+ */
+async function clearUserPermissions(userId) {
+  try {
+    // 获取该用户绑定的设备数
+    const [deviceCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM device_permissions WHERE user_id = ?',
+      [userId]
+    );
+    
+    // 删除该用户的所有设备绑定关系
+    await pool.query(
+      'DELETE FROM device_permissions WHERE user_id = ?',
+      [userId]
+    );
+    
+    logger.info(`已清除用户ID ${userId} 的 ${deviceCount[0].count} 个设备绑定关系`);
+    
+    return {
+      success: true,
+      message: '用户设备权限已全部清除',
+      count: deviceCount[0].count
+    };
+  } catch (error) {
+    logger.error('清除用户权限时出错', error);
+    throw error;
+  }
+}
+
 module.exports = {
   pool,
-  initDatabase
+  initDatabase,
+  clearUserPermissions
 };

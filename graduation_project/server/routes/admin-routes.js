@@ -4,6 +4,7 @@ const { authenticateUser, requireAdmin } = require('../middlewares/auth-middlewa
 const logger = require('../utils/logger');
 const dataStore = require('../data/data-store');
 const { pool } = require('../database/db');
+const permissionController = require('../controllers/permission-controller'); // 添加此行
 
 // 应用管理员权限中间件
 router.use(authenticateUser, requireAdmin);
@@ -85,67 +86,13 @@ router.post('/api/admin/users', async (req, res) => {
 });
 
 // 修改用户角色
-router.put('/api/admin/users/:userId/role', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { role } = req.body;
-    
-    // 验证角色
-    if (!role || !['admin', 'user'].includes(role)) {
-      return res.status(400).json({ success: false, message: '无效的用户角色' });
-    }
-    
-    // 检查用户是否存在
-    const [users] = await pool.query(
-      'SELECT username FROM users WHERE id = ?',
-      [userId]
-    );
-    
-    if (users.length === 0) {
-      return res.status(404).json({ success: false, message: '用户不存在' });
-    }
-    
-    // 更新角色
-    await pool.query(
-      'UPDATE users SET role = ? WHERE id = ?',
-      [role, userId]
-    );
-    
-    logger.info(`管理员 ${req.user.username} 将用户 ${users[0].username} 的角色修改为 ${role}`);
-    
-    res.json({ success: true, message: '用户角色更新成功' });
-  } catch (error) {
-    logger.error('修改用户角色失败', error);
-    res.status(500).json({ success: false, message: '修改用户角色失败' });
-  }
-});
+router.put('/api/admin/users/:userId/role', requireAdmin, permissionController.updateUserRole);
 
 // 删除用户
-router.delete('/api/admin/users/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    // 检查用户是否存在
-    const [users] = await pool.query(
-      'SELECT username FROM users WHERE id = ?',
-      [userId]
-    );
-    
-    if (users.length === 0) {
-      return res.status(404).json({ success: false, message: '用户不存在' });
-    }
-    
-    // 删除用户
-    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
-    
-    logger.info(`管理员 ${req.user.username} 删除了用户 ${users[0].username}`);
-    
-    res.json({ success: true, message: '用户删除成功' });
-  } catch (error) {
-    logger.error('删除用户失败', error);
-    res.status(500).json({ success: false, message: '删除用户失败' });
-  }
-});
+router.delete('/api/admin/users/:userId', requireAdmin, permissionController.deleteUser);
+
+// 清除用户所有设备权限
+router.delete('/api/admin/users/:userId/permissions', requireAdmin, permissionController.clearUserPermissionsController);
 
 // 获取所有设备
 router.get('/api/admin/devices', (req, res) => {
