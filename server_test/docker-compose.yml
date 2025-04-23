@@ -1,0 +1,61 @@
+version: '3'
+services:
+  # MQTT Broker
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+    restart: unless-stopped
+
+  # MySQL数据库
+  mysql:
+    image: mariadb:10.6
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: edge_box_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+
+  # MQTT Client in Docker
+  mqtt-client:
+    build:
+      context: .
+    environment:
+      - MQTT_BROKER_URL=mqtt://mqtt-broker:1883
+    volumes:
+      - ./data:/app/data  # 确保数据持久化
+    depends_on:
+      - mqtt-broker
+    command: ["node", "mqtt-client.js"]
+    restart: unless-stopped
+
+  # Node.js Backend Server
+  web-server:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MQTT_BROKER_URL=mqtt://mqtt-broker:1883
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=edge_box_db
+      - JWT_SECRET=edge-box-secure-jwt-secret-key
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mqtt-broker
+      - mqtt-client
+      - mysql
+    command: ["node", "server.js"]
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

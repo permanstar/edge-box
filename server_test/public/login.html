@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 边缘盒子管理系统</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <h1>边缘盒子管理系统</h1>
+        </div>
+        
+        <div class="login-form">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码">
+            </div>
+            <div class="form-error" id="login-error"></div>
+            <button id="login-button" class="btn btn-primary">登录</button>
+        </div>
+        
+        <div class="register-link">
+            还没有账号？<a href="/register">立即注册</a>
+        </div>
+        
+        <div class="login-footer">
+            <p>© 2025 边缘盒子管理系统</p>
+        </div>
+    </div>
+    
+    <script src="js/login.js"></script>
+</body>
+</html>

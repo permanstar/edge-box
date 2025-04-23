@@ -1,0 +1,32 @@
+{
+  "devices": [
+    {
+      "id": "device-001",
+      "name": "温度传感器-1",
+      "type": "temperature",
+      "status": "online",
+      "value": 25.6,
+      "unit": "°C",
+      "lastUpdated": 1742838277396
+    },
+    {
+      "id": "device-002",
+      "name": "湿度传感器-1",
+      "type": "humidity",
+      "status": "online",
+      "value": 67.1,
+      "unit": "%",
+      "lastUpdated": 1742838277396
+    },
+    {
+      "id": "device-003",
+      "name": "光照传感器-1",
+      "type": "light",
+      "status": "online",
+      "value": 910,
+      "unit": "lux",
+      "lastUpdated": 1742838277396
+    }
+  ],
+  "timestamp": 1742838277396
+}

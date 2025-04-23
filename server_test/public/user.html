@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边缘盒子管理系统 - 用户界面</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/user.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>边缘盒子管理系统</h1>
+            <div class="user-info">
+                <span id="username-display">加载中...</span>
+                <button id="logout-btn">退出登录</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="dashboard-header">
+            <h2>我的设备</h2>
+            <button id="refresh-btn" class="btn">刷新数据</button>
+        </div>
+        
+        <div id="devices-container" class="devices-grid">
+            <div class="loading-message">加载设备数据中...</div>
+        </div>
+        
+        <div class="timestamp" id="timestamp">最后更新时间: --</div>
+        
+        <!-- 通知元素 -->
+        <div class="notification" id="notification"></div>
+    </main>
+
+    <!-- JavaScript引入 -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/websocket-service.js"></script>
+    <script src="/js/user-ui.js"></script>
+    <script src="/js/user.js"></script>
+</body>
+</html>
